@@ -16,41 +16,41 @@ class RestApiSpec extends Specification with Specs2RouteTest with RestRoute {
 
   "The Rest service" should {
     "Return a count of queries on a range specified with a partial timestamp (year only)" in {
-      Get("/queries/count/2015") ~> sealRoute(restRoute) ~> check {
+      Get("/1/queries/count/2015") ~> sealRoute(restRoute) ~> check {
         status mustEqual StatusCodes.OK
         responseAs[Count].count mustEqual 573697
       }
     }
 
     "Return a count of queries on a range specified with a partial timestamp (date only)" in {
-      Get("/queries/count/2015-08-03") ~> sealRoute(restRoute) ~> check {
+      Get("/1/queries/count/2015-08-03") ~> sealRoute(restRoute) ~> check {
         status mustEqual StatusCodes.OK
         responseAs[Count].count mustEqual 198117
       }
     }
 
     "Return a count of queries on a range specified with a full timestamp" in {
-      Get("/queries/count/2015-08-03%2006:42:00") ~> sealRoute(restRoute) ~> check {
+      Get("/1/queries/count/2015-08-03%2006:42:00") ~> sealRoute(restRoute) ~> check {
         status mustEqual StatusCodes.OK
         responseAs[Count].count mustEqual 8
       }
     }
 
     "Return a count of 0 if time range contains no data" in {
-      Get("/queries/count/2000-01-01") ~> sealRoute(restRoute) ~> check {
+      Get("/1/queries/count/2000-01-01") ~> sealRoute(restRoute) ~> check {
         status mustEqual StatusCodes.OK
         responseAs[Count].count mustEqual 0
       }
     }
 
     "Return an error code status if the specified range has a wrong format" in {
-      Get("/queries/count/2000-0001-0001") ~> sealRoute(restRoute) ~> check {
+      Get("/1/queries/count/2000-0001-0001") ~> sealRoute(restRoute) ~> check {
         status mustEqual StatusCodes.BadRequest
       }
     }
 
     "Return top 5 queries on a given date range" in {
-      Get("/queries/popular/2015-08-02?size=5") ~> sealRoute(restRoute) ~> check {
+      Get("/1/queries/popular/2015-08-02?size=5") ~> sealRoute(restRoute) ~> check {
         status mustEqual StatusCodes.OK
         val queriesAndCount = responseAs[QueryAndCountList].queries
         queriesAndCount.length mustEqual 5
