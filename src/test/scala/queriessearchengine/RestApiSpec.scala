@@ -3,13 +3,15 @@ package queriessearchengine
 import spray.http._
 import spray.httpx.SprayJsonSupport._
 import spray.testkit.Specs2RouteTest
-
 import org.specs2.mutable.Specification
 
-import queriessearchengine.Protocol._
+import Protocol._
+
+import scala.concurrent.duration._
 
 class RestApiSpec extends Specification with Specs2RouteTest with RestRoute {
   def actorRefFactory = system
+  implicit def defaultTimeout = RouteTestTimeout(Duration(10, SECONDS))
 
    // Unit testing should not rely on external data, but such considerations are out of our scope here
    // The tested RestApi class tries to load the input data file indicated in the project configuration

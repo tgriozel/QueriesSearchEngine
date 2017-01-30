@@ -2,8 +2,8 @@ package queriessearchengine
 
 import akka.actor._
 import spray.http.StatusCodes
-import spray.httpx.SprayJsonSupport._
 import spray.routing._
+
 import Protocol._
 
 import scala.io.Source
@@ -14,7 +14,7 @@ class RestApi extends HttpServiceActor with RestRoute {
 }
 
 trait RestRoute extends HttpService {
-  val apiVersionString = "1"
+  private val apiVersionString = "1"
   private val file = Source.fromFile(com.typesafe.config.ConfigFactory.load.getString("input.tsv-file"))
   private val queriesStore = new TimestampedValuesStore(file.getLines(), "\t")
 
@@ -30,8 +30,8 @@ trait RestRoute extends HttpService {
             get { requestContext =>
               Try(DateRangeUtils.formattedDateRangeFromPartialDate(partialDate)) match {
                 case Success(dates) => {
-                  val result = queriesStore.rangedDistinctCount(dates._1, dates._2)
-                  createResponder(requestContext) ! Count(result)
+                  val future = queriesStore.rangedDistinctCount(dates._1, dates._2)
+                  createResponder(requestContext) ! CountFuture(future)
                 }
                 case Failure(throwable) => {
                   createResponder(requestContext) ! throwable
@@ -46,8 +46,8 @@ trait RestRoute extends HttpService {
                 parameters('size.as[Int]) { size => { requestContext =>
                   Try(DateRangeUtils.formattedDateRangeFromPartialDate(partialDate)) match {
                     case Success(dates) => {
-                      val result = queriesStore.orderedTopRangedValues(dates._1, dates._2, size)
-                      createResponder(requestContext) ! QueryAndCountList(result.map{ new QueryAndCount(_)} )
+                      val future = queriesStore.orderedTopRangedValues(dates._1, dates._2, size)
+                      createResponder(requestContext) ! QueryAndCountListFuture(future)
                     }
                     case Failure(throwable) => {
                       createResponder(requestContext) ! throwable
@@ -66,13 +66,35 @@ trait RestRoute extends HttpService {
   }
 }
 
-class Responder(requestContext: RequestContext) extends Actor with ActorLogging {
-  def receive = {
-    case count: Count => requestContext.complete(StatusCodes.OK, count)
-    case queryAndCountList: QueryAndCountList => requestContext.complete(StatusCodes.OK, queryAndCountList)
-    case _ => requestContext.complete(StatusCodes.BadRequest)
+class Responder(requestContext: RequestContext) extends Actor {
+  import spray.httpx.SprayJsonSupport._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
-    terminate()
+  def receive = {
+    case message: CountFuture => message.countFuture.onComplete {
+      case Success(count: Int) => {
+        requestContext.complete(StatusCodes.OK, Count(count))
+        terminate()
+      }
+      case Failure(_) => {
+        requestContext.complete(StatusCodes.InternalServerError)
+        terminate()
+      }
+    }
+    case message: QueryAndCountListFuture => message.listFuture.onComplete {
+      case Success(seq: Seq[(String, Int)]) => {
+        requestContext.complete(StatusCodes.OK, QueryAndCountList(seq.map(new QueryAndCount(_))))
+        terminate()
+      }
+      case Failure(_) => {
+        requestContext.complete(StatusCodes.InternalServerError)
+        terminate()
+      }
+    }
+    case _ => {
+      requestContext.complete(StatusCodes.BadRequest)
+      terminate()
+    }
   }
 
   private def terminate() = self ! PoisonPill
