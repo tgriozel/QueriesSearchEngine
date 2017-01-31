@@ -29,13 +29,5 @@ class DateRangeUtilsSpec extends Specification {
         result._2 mustEqual "2016-06-06 12:12:13"
       }
     }
-
-    "Correctly increment a formatted date" in {
-      DateRangeUtils.incrementFormattedDateString("2016-06-06 12:12:12") mustEqual "2016-06-06 12:12:13"
-    }
-
-    "Correctly decrement a formatted date" in {
-      DateRangeUtils.decrementFormattedDateString("2016-06-06 12:12:12") mustEqual "2016-06-06 12:12:11"
-    }
   }
 }

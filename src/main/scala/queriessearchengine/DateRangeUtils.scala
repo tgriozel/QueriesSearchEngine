@@ -30,14 +30,4 @@ object DateRangeUtils {
     val dateRange = dateRangeFromPartialDate(partialDate)
     (dateRange._1.format(formatter), dateRange._2.format(formatter))
   }
-
-  def incrementFormattedDateString(dateString: String): String = {
-    val date = LocalDateTime.parse(dateString, formatter)
-    date.plusSeconds(1).format(formatter)
-  }
-
-  def decrementFormattedDateString(dateString: String): String = {
-    val date = LocalDateTime.parse(dateString, formatter)
-    date.minusSeconds(1).format(formatter)
-  }
 }
